@@ -9,7 +9,7 @@ export default function Auth() {
   const [fullName, setFullName] = useState('');
   const [phone, setPhone] = useState(''); 
   const [error, setError] = useState('');
-  const [successMessage, setSuccessMessage] = useState(''); // --- 1. ADD STATE ---
+  const [successMessage, setSuccessMessage] = useState(''); // Holds the success message
   const [loading, setLoading] = useState(false);
 
   const { signIn, signUp } = useAuth();
@@ -17,7 +17,7 @@ export default function Auth() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    setSuccessMessage(''); // --- 2. CLEAR SUCCESS MESSAGE ON SUBMIT ---
+    setSuccessMessage(''); // Clear previous messages
     setLoading(true);
 
     try {
@@ -37,12 +37,13 @@ export default function Auth() {
 
         // --- 3. SET SUCCESS MESSAGE ---
         setSuccessMessage('Account created successfully! Please check your email to verify your account.');
-        // Clear form and flip to login mode for a clean UI
+        
+        // Clear form but STAY on the sign-up tab
         setEmail('');
         setPassword('');
         setFullName('');
         setPhone('');
-        setIsLogin(true);
+        // setIsLogin(true); // --- THIS LINE WAS REMOVED ---
       }
     } catch (err: any) {
       setError(err.message || 'An error occurred');
@@ -64,12 +65,33 @@ export default function Auth() {
 
         <div className="bg-white rounded-2xl shadow-xl p-8">
           <div className="flex gap-2 mb-6">
-            {/* ... (Toggle buttons) ... */}
+            <button
+              onClick={() => setIsLogin(true)}
+              className={`flex-1 py-2.5 px-4 rounded-lg font-medium transition-all ${
+                isLogin
+                  ? 'bg-slate-900 text-white shadow-md'
+                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+              }`}
+            >
+              <LogIn className="w-4 h-4 inline mr-2" />
+              Login
+            </button>
+            <button
+              onClick={() => setIsLogin(false)}
+              className={`flex-1 py-2.5 px-4 rounded-lg font-medium transition-all ${
+                !isLogin
+                  ? 'bg-slate-900 text-white shadow-md'
+                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+              }`}
+            >
+              <UserPlus className="w-4 h-4 inline mr-2" />
+              Sign Up
+            </button>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             
-            {/* --- 4. RENDER SUCCESS MESSAGE --- */}
+            {/* --- RENDER SUCCESS MESSAGE --- */}
             {successMessage && (
               <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg text-sm">
                 {successMessage}
@@ -85,16 +107,67 @@ export default function Auth() {
 
             {!isLogin && (
               <>
-                {/* ... (Full Name and Phone inputs) ... */}
+                <div>
+                  <label htmlFor="fullName" className="block text-sm font-medium text-slate-700 mb-1.5">
+                    Full Name
+                  </label>
+                  <input
+                    id="fullName"
+                    type="text"
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    required
+                    className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-900 focus:border-transparent transition-all"
+                    placeholder="John Doe"
+                  />
+                </div>
+                
+                <div>
+                  <label htmlFor="phone" className="block text-sm font-medium text-slate-700 mb-1.5">
+                    Phone Number
+                  </label>
+                  <input
+                    id="phone"
+                    type="tel"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    required
+                    className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-900 focus:border-transparent transition-all"
+                    placeholder="Enter 10-digit mobile number"
+                  />
+                </div>
               </>
             )}
 
             <div>
-              {/* ... (Email input) ... */}
+              <label htmlFor="email" className="block text-sm font-medium text-slate-700 mb-1.5">
+                Email
+              </label>
+              <input
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                className="w-full px-4 py-2.A5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-900 focus:border-transparent transition-all"
+                placeholder={isLogin ? "Enter your email" : "you@iitr.ac.in"}
+              />
             </div>
 
             <div>
-              {/* ... (Password input) ... */}
+              <label htmlFor="password" className="block text-sm font-medium text-slate-700 mb-1.5">
+                Password
+              </label>
+              <input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                minLength={6}
+                className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-900 focus:border-transparent transition-all"
+                placeholder={isLogin ? "Enter your password" : "Create a password (min. 6 chars)"}
+              />
             </div>
 
             <button
