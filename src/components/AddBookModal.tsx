@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { X } from 'lucide-react';
+import { X, UploadCloud } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -11,25 +11,62 @@ interface AddBookModalProps {
 export default function AddBookModal({ onClose, onSuccess }: AddBookModalProps) {
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
+  
   const [formData, setFormData] = useState({
     title: '',
     author: '',
     isbn: '',
     description: '',
-    address: '', 
-    phone: '', 
-    image_url: '',
+    address: '',
+    phone: '',
   });
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      setImageFile(file);
+      // Revoke old preview URL to prevent memory leaks
+      if (imagePreview) {
+        URL.revokeObjectURL(imagePreview);
+      }
+      setImagePreview(URL.createObjectURL(file));
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!user) return;
+
     setLoading(true);
 
     try {
+      let imageUrl = null;
+
+      // 1. Upload Image
+      if (imageFile) {
+        const filePath = `${user.id}/${Date.now()}_${imageFile.name}`;
+        const { error: uploadError } = await supabase.storage
+          .from('book-covers')
+          .upload(filePath, imageFile);
+
+        if (uploadError) throw uploadError;
+
+        // 2. Get Public URL
+        const { data: urlData } = supabase.storage
+          .from('book-covers')
+          .getPublicUrl(filePath);
+        
+        imageUrl = urlData.publicUrl;
+      }
+
+      // 3. Insert Book Data
       const { error } = await supabase.from('books').insert({
         ...formData,
-        owner_id: user!.id,
+        owner_id: user.id,
         status: 'available',
+        image_url: imageUrl,
       });
 
       if (error) throw error;
@@ -56,6 +93,7 @@ export default function AddBookModal({ onClose, onSuccess }: AddBookModalProps) 
           </button>
         </div>
 
+        {/* --- ALL FORM FIELDS ARE HERE --- */}
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1.5">
@@ -85,7 +123,6 @@ export default function AddBookModal({ onClose, onSuccess }: AddBookModalProps) 
             />
           </div>
 
-          {/* --- Added Address Input --- */}
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1.5">
               Address / Bhawan Name *
@@ -100,7 +137,6 @@ export default function AddBookModal({ onClose, onSuccess }: AddBookModalProps) 
             />
           </div>
 
-          {/* --- Added Phone Input --- */}
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1.5">
               Phone Number *
@@ -128,8 +164,6 @@ export default function AddBookModal({ onClose, onSuccess }: AddBookModalProps) 
             />
           </div>
 
-          {/* --- Removed Condition Select --- */}
-
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1.5">
               Description
@@ -143,18 +177,36 @@ export default function AddBookModal({ onClose, onSuccess }: AddBookModalProps) 
             />
           </div>
 
+          {/* --- Image Upload Field --- */}
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1.5">
-              Image URL
+              Book Cover
             </label>
             <input
-              type="url"
-              value={formData.image_url}
-              onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
-              className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-900 focus:border-transparent"
-              placeholder="https://example.com/book-cover.jpg"
+              type="file"
+              id="book-cover-upload"
+              accept="image/png, image/jpeg, image/webp"
+              onChange={handleFileChange}
+              className="hidden"
             />
+            <label
+              htmlFor="book-cover-upload"
+              className="w-full h-40 border-2 border-dashed border-slate-300 rounded-lg flex flex-col items-center justify-center cursor-pointer hover:bg-slate-50 transition-all"
+            >
+              {imagePreview ? (
+                <img src={imagePreview} alt="Book preview" className="h-full w-full object-contain rounded-lg p-1" />
+              ) : (
+                <>
+                  <UploadCloud className="w-10 h-10 text-slate-400 mb-2" />
+                  <span className="text-sm font-medium text-slate-700">
+                    Click to upload image
+                  </span>
+                  <span className="text-xs text-slate-500">PNG, JPG, or WEBP</span>
+                </>
+              )}
+            </label>
           </div>
+          {/* --------------------------- */}
 
           <div className="flex gap-3 pt-4">
             <button

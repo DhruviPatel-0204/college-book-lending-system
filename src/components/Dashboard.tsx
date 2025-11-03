@@ -48,7 +48,7 @@ export default function Dashboard() {
                  <BookOpen className="w-6 h-6 text-white" />
                </div>
                <div>
-                 <h1 className="text-2xl font-bold text-slate-900">Book Exchange</h1>
+                 <h1 className="text-2xl font-bold text-slate-900">CampusReads</h1>
                  <p className="text-sm text-slate-600">Welcome, {profile?.full_name}</p>
                </div>
              </div>

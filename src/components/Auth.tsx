@@ -47,7 +47,7 @@ export default function Auth() {
           <div className="inline-flex items-center justify-center w-16 h-16 bg-slate-900 rounded-2xl mb-4">
             <BookOpen className="w-8 h-8 text-white" />
           </div>
-          <h1 className="text-3xl font-bold text-slate-900 mb-2">College Book Exchange</h1>
+          <h1 className="text-3xl font-bold text-slate-900 mb-2">CampusReads</h1>
           <p className="text-slate-600">Borrow and lend books with your peers</p>
         </div>
 
@@ -91,7 +91,6 @@ export default function Auth() {
                     onChange={(e) => setFullName(e.target.value)}
                     required
                     className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-900 focus:border-transparent transition-all"
-                    placeholder="John Doe"
                   />
                 </div>
                 
@@ -126,7 +125,7 @@ export default function Auth() {
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-900 focus:border-transparent transition-all"
-                placeholder="you@iitr.ac.in"
+                placeholder={isLogin ? "Enter your email" : "you@iitr.ac.in"}
               />
             </div>
 
@@ -142,7 +141,7 @@ export default function Auth() {
                 required
                 minLength={6}
                 className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-900 focus:border-transparent transition-all"
-                placeholder="••••••••"
+                placeholder={isLogin ? "Enter your password" : "Create a password (min. 6 chars)"}
               />
             </div>
 
