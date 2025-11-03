@@ -49,7 +49,7 @@ export default function BookList({ onAddBook, onBorrowBook, mode }: BookListProp
     setLoading(true);
 
     if (mode === 'browse') {
-      // "Browse" mode: Load all books (except your own, optional)
+      // "Browse" mode: Load all books
       const { data, error } = await supabase
         .from('books')
         .select(`
@@ -58,17 +58,15 @@ export default function BookList({ onAddBook, onBorrowBook, mode }: BookListProp
             full_name
           )
         `)
-        // Optional: Hide your own books from the "Browse" tab
-        // .not('owner_id', 'eq', user.id) 
         .order('created_at', { ascending: false });
 
       if (data) {
         setBooks(data);
       }
     } else {
-      // "My Books" mode: Load books I own OR books I'm borrowing
+      // "My Books" mode: Load books I own (ALL) OR books I'm borrowing
 
-      // 1. Books I own that are 'available'
+      // 1. Books I own (All statuses)
       const { data: myOwnedBooks, error: ownedError } = await supabase
         .from('books')
         .select(`
@@ -77,8 +75,8 @@ export default function BookList({ onAddBook, onBorrowBook, mode }: BookListProp
             full_name
           )
         `)
-        .eq('owner_id', user.id)
-        .eq('status', 'available');
+        .eq('owner_id', user.id);
+        // --- THIS LINE WAS REMOVED: .eq('status', 'available') ---
 
       // 2. Books I've borrowed and not returned (status is 'approved')
       const { data: myBorrowedRequests, error: borrowedError } = await supabase
@@ -115,14 +113,26 @@ export default function BookList({ onAddBook, onBorrowBook, mode }: BookListProp
   const handleDelete = async (bookId: string) => {
     if (!confirm('Are you sure you want to delete this book?')) return;
 
+    // --- ADDED: Delete image from storage first ---
+    const bookToDelete = books.find(b => b.id === bookId);
+    if (bookToDelete?.image_url) {
+      // Extract the file path from the URL
+      const filePath = bookToDelete.image_url.split('/book-covers/')[1];
+      if (filePath) {
+        await supabase.storage.from('book-covers').remove([filePath]);
+      }
+    }
+    // ------------------------------------------
+    
     const { error } = await supabase
       .from('books')
       .delete()
       .eq('id', bookId);
 
     if (!error) {
-      // Use loadBooks() to refresh the list correctly for the current mode
       loadBooks(); 
+    } else {
+      alert(error.message);
     }
   };
 
@@ -154,7 +164,6 @@ export default function BookList({ onAddBook, onBorrowBook, mode }: BookListProp
   return (
     <div>
       <div className="mb-6 flex gap-4">
-         {/* ... (search and add book button code remains the same) ... */}
          <div className="flex-1 relative">
            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />
            <input
@@ -176,7 +185,6 @@ export default function BookList({ onAddBook, onBorrowBook, mode }: BookListProp
 
       {filteredBooks.length === 0 ? (
         <div className="text-center py-12">
-          {/* --- UPDATED Empty State Message --- */}
           <p className="text-slate-600 text-lg">
             {mode === 'browse' ? 'No books found' : 'You have no books in this list'}
           </p>

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { X, UploadCloud } from 'lucide-react';
 import { supabase } from '../lib/supabase';
-import { useAuth } from '../contexts/AuthContext'; // --- ADDED ---
+import { useAuth } from '../contexts/AuthContext';
 
 interface Book {
   id: string;
@@ -22,32 +22,26 @@ interface EditBookModalProps {
 }
 
 export default function EditBookModal({ book, onClose, onSuccess }: EditBookModalProps) {
-  const { user } = useAuth(); // --- ADDED ---
+  const { user } = useAuth();
   const [loading, setLoading] = useState(false);
+  
+  // This form state holds all text/select fields
   const [formData, setFormData] = useState({
     title: book.title,
     author: book.author,
     address: book.address,
     phone: book.phone,
     description: book.description || '',
-    image_url: book.image_url || '',
+    image_url: book.image_url || '', // This tracks the *current* image URL
     status: book.status,
   });
 
-  // --- ADDED ---
+  // This state is just for the new file (if any)
   const [imageFile, setImageFile] = useState<File | null>(null);
+  // This state is for the <img /> preview
   const [imagePreview, setImagePreview] = useState<string | null>(book.image_url);
 
-  // --- ADDED ---
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      setImageFile(file);
-      setImagePreview(URL.createObjectURL(file));
-    }
-  };
-  
-  // Sync form if book prop changes
+  // This syncs the form if the book prop changes (e.g., you edit one book, then another)
   useEffect(() => {
     setFormData({
       title: book.title,
@@ -58,29 +52,42 @@ export default function EditBookModal({ book, onClose, onSuccess }: EditBookModa
       image_url: book.image_url || '',
       status: book.status,
     });
-    setImagePreview(book.image_url);
+    setImagePreview(book.image_url); // Reset preview to the book's current image
+    setImageFile(null); // Clear any staged file
   }, [book]);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      setImageFile(file);
+      // Create a local preview URL
+      if (imagePreview) {
+        URL.revokeObjectURL(imagePreview);
+      }
+      setImagePreview(URL.createObjectURL(file));
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user) return; // --- ADDED ---
+    if (!user) return;
 
     setLoading(true);
 
     try {
       let imageUrlToSave = formData.image_url; // Start with the existing URL
 
-      // --- 1. UPLOAD NEW IMAGE (if one is selected) ---
+      // 1. If a new file was selected, upload it
       if (imageFile) {
-        // (Optional: You could delete the old image from storage here)
         const filePath = `${user.id}/${Date.now()}_${imageFile.name}`;
         
         const { error: uploadError } = await supabase.storage
           .from('book-covers')
-          .upload(filePath, imageFile);
+          .upload(filePath, imageFile); // You could also use .update() if you store the path
 
         if (uploadError) throw uploadError;
 
+        // Get the new public URL
         const { data: urlData } = supabase.storage
           .from('book-covers')
           .getPublicUrl(filePath);
@@ -88,15 +95,22 @@ export default function EditBookModal({ book, onClose, onSuccess }: EditBookModa
         imageUrlToSave = urlData.publicUrl;
       }
 
-      // --- 2. UPDATE BOOK DATA ---
+      // 2. Update the book record in the database
       const { error } = await supabase
         .from('books')
         .update({
-          ...formData, // Has all text fields
-          image_url: imageUrlToSave, // Has the new or original URL
+          // Update all text fields from formData
+          title: formData.title,
+          author: formData.author,
+          address: formData.address,
+          phone: formData.phone,
+          status: formData.status,
+          description: formData.description,
+          // Update the image URL to the new one (or the original if unchanged)
+          image_url: imageUrlToSave,
           updated_at: new Date().toISOString(),
         })
-        .eq('id', book.id);
+        .eq('id', book.id); // Specify which book to update
 
       if (error) throw error;
 
@@ -122,11 +136,88 @@ export default function EditBookModal({ book, onClose, onSuccess }: EditBookModa
           </button>
         </div>
 
+        {/* --- ALL FORM FIELDS ARE HERE --- */}
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          {/* ... (Title, Author, Address, Phone, Status, Description inputs) ... */}
-          {/* All other form fields remain the same */}
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1.5">
+              Title *
+            </label>
+            <input
+              type="text"
+              required
+              value={formData.title}
+              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+              className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-900 focus:border-transparent"
+            />
+          </div>
 
-          {/* --- REPLACED "Image URL" with "Image Upload" --- */}
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1.5">
+              Author *
+            </label>
+            <input
+              type="text"
+              required
+              value={formData.author}
+              onChange={(e) => setFormData({ ...formData, author: e.target.value })}
+              className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-900 focus:border-transparent"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1.5">
+              Address / Bhawan Name *
+            </label>
+            <input
+              type="text"
+              required
+              value={formData.address}
+              onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+              className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-900 focus:border-transparent"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1.5">
+              Phone Number *
+            </label>
+            <input
+              type="tel"
+              required
+              value={formData.phone}
+              onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+              className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-900 focus:border-transparent"
+            />
+          </div>
+          
+           <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1.5">
+              Status *
+            </label>
+            <select
+              value={formData.status}
+              onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+              className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-900 focus:border-transparent"
+            >
+              <option value="available">Available</option>
+              <option value="borrowed">Borrowed</option>
+              <option value="unavailable">Unavailable</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1.5">
+              Description
+            </label>
+            <textarea
+              value={formData.description}
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              rows={3}
+              className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-900 focus:border-transparent"
+            />
+          </div>
+
+          {/* --- Image Upload Field --- */}
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1.5">
               Book Cover
@@ -136,9 +227,8 @@ export default function EditBookModal({ book, onClose, onSuccess }: EditBookModa
               id="book-cover-edit"
               accept="image/png, image/jpeg, image/webp"
               onChange={handleFileChange}
-              className="hidden" // Hide the default file input
+              className="hidden"
             />
-            {/* Custom file input button */}
             <label
               htmlFor="book-cover-edit"
               className="w-full h-40 border-2 border-dashed border-slate-300 rounded-lg flex flex-col items-center justify-center cursor-pointer hover:bg-slate-50 transition-all"
@@ -156,7 +246,7 @@ export default function EditBookModal({ book, onClose, onSuccess }: EditBookModa
               )}
             </label>
           </div>
-          {/* ----------------------------------------------- */}
+          {/* --------------------------- */}
 
           <div className="flex gap-3 pt-4">
             <button
@@ -165,7 +255,7 @@ export default function EditBookModal({ book, onClose, onSuccess }: EditBookModa
               className="flex-1 px-4 py-2.5 border border-slate-300 text-slate-700 rounded-lg font-medium hover:bg-slate-50 transition-all"
             >
               Cancel
-            </button>
+            </button>.
             <button
               type="submit"
               disabled={loading}

@@ -20,14 +20,13 @@ interface BookCardProps {
 }
 
 export default function BookCard({ book, ownerName, isOwner, onBorrow, onEdit, onDelete }: BookCardProps) {
-  // Removed getConditionColor function
 
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'available':
         return 'bg-green-100 text-green-800';
       case 'borrowed':
-        return 'bg-orange-100 text-orange-800';
+        return 'bg-orange-100 text-orange-800'; 
       case 'unavailable':
         return 'bg-gray-100 text-gray-800';
       default:
@@ -48,9 +47,8 @@ export default function BookCard({ book, ownerName, isOwner, onBorrow, onEdit, o
       <div className="p-5">
         <div className="flex gap-2 mb-3">
           <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${getStatusColor(book.status)}`}>
-            {book.status}
+            {isOwner && book.status === 'borrowed' ? 'lent' : book.status}
           </span>
-          {/* Removed Condition Span */}
         </div>
 
         <h3 className="text-lg font-bold text-slate-900 mb-1 line-clamp-1">{book.title}</h3>
@@ -67,13 +65,11 @@ export default function BookCard({ book, ownerName, isOwner, onBorrow, onEdit, o
           </div>
         )}
 
-        {/* --- Added Address/Bhawan --- */}
         <div className="flex items-center text-sm text-slate-500 mb-2">
           <MapPin className="w-4 h-4 mr-1.5 flex-shrink-0" />
           <span className="line-clamp-1">{book.address}</span>
         </div>
 
-        {/* --- Added Phone Number --- */}
         <div className="flex items-center text-sm text-slate-500 mb-4">
           <Phone className="w-4 h-4 mr-1.5 flex-shrink-0" />
           <span>{book.phone}</span>
