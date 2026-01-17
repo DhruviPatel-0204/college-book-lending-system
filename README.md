@@ -1,5 +1,7 @@
 # College Book Lending System
 
+Website link: https://college-book-lending-system.vercel.app/
+
 ## Core Features
 ### IITR-Restricted Access
 - Ensures platform use is exclusive to the campus community.
@@ -24,4 +26,3 @@
 ### Authentication
 - IITR email restriction with planned OTP verification for security.
 
-Website link: https://college-book-lending-system.vercel.app/
